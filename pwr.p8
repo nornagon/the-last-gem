@@ -64,29 +64,36 @@ function draw_belt(v, xl, yl)
   spr(sprid, xl, yl, 1, 1, flip_x, flip_y)
 end
 
+function dir(v)
+  if (v==0) return 1,0
+  if (v==1) return 0,-1
+  if (v==2) return -1,0
+  if (v==3) return 0,1
+end
+
 function place_belt(exit, tx, ty)
   local entry = (exit + 2) % 4
 
-  if exit==0 then
-    local up = grid[tx][ty-1]
-    local down = grid[tx][ty+1]
-    local up_d = up ~= nil and band(up, 0xc) == 0xc
-    local down_u = down ~= nil and band(down, 0xc) == 4
-    if (up_d and not down_u) entry = 1
-    if (down_u and not up_d) entry = 3
-  end
+  local ccwd = (exit+1)%4
+  local cwd = (exit+3)%4
+  local ccwdx, ccwdy = dir(ccwd)
+  local cwdx, cwdy = dir(cwd)
+
+  local ccwg = grid[tx+ccwdx][ty+ccwdy]
+  local cwg = grid[tx+cwdx][ty+cwdy]
+
+  local ccw_enters = ccwg ~= nil and shr(band(ccwg, 0xc), 2) == (ccwd+2)%4
+  local cw_enters = cwg ~= nil and shr(band(cwg, 0xc), 2) == (cwd+2)%4
+
+  if (ccw_enters and not cw_enters) entry = ccwd
+  if (cw_enters and not ccw_enters) entry = cwd
 
   grid[tx][ty] = entry + shl(exit, 2)
 
-  local dx=0
-  local dy=0
-  if (exit==0) dx=1
-  if (exit==1) dy=-1
-  if (exit==2) dx=-1
-  if (exit==3) dy=1
-  local adj=grid[tx+dx][ty+dy]
-  if adj ~= nil then
-    adj = band(adj, 0xc) + (entry )
+  local exdx, exdy = dir(exit)
+  local exg = grid[tx+exdx][ty+exdy]
+  if exg ~= nil then
+    local exex = shr(band(exg, 0xc), 2)
   end
 end
 
@@ -122,7 +129,7 @@ function _draw()
   mouse_tx = flr(mouse_x/8)
   mouse_ty = flr(mouse_y/8)
 
-  if t%11 ~= 0 then
+  if t%11 > 2 then
     draw_belt(shl(mouse_rot, 2)+((mouse_rot+2)%4), mouse_tx*8, mouse_ty*8)
     spr(5, mouse_tx*8, mouse_ty*8)
   end
