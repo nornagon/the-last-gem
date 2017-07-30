@@ -4,6 +4,7 @@ __lua__
 width=16
 height=16
 ruby=7
+jasper=8
 topaz=9
 beryl=10
 dollars=-10
@@ -15,7 +16,7 @@ bldg_types={
            {{124},{68,16+topaz}}},
     collectors={{x=0,y=0,t=ruby}},
     depositors={{x=1,y=1,t=topaz}},
-    recipe={i={[ruby]=2},o={[topaz]=1},p=20},
+    recipe={i={[ruby]=2},o={[topaz]=1},p=15},
     cost=10
   },
   {
@@ -23,8 +24,30 @@ bldg_types={
     tiles={{{82,16+topaz},{93},{93},{114,16+beryl}}},
     collectors={{x=0,y=0,t=topaz}},
     depositors={{x=3,y=0,t=beryl}},
-    recipe={i={[topaz]=1},o={[beryl]=1},p=50},
+    recipe={i={[topaz]=1},o={[beryl]=1},p=30},
     cost=20
+  },
+  {
+    belts={{0xe,0},
+           {0,0x6}},
+    tiles={{{97,16+ruby},{}},
+           {{124},{81,16+jasper}}},
+    collectors={{x=0,y=0,t=ruby}},
+    depositors={{x=1,y=1,t=jasper}},
+    recipe={i={[ruby]=1},o={[jasper]=1},p=10},
+    cost=60
+  },
+  {
+    belts={{0xd},
+           {0},
+           {0xd}},
+    tiles={{{83,16+jasper}},
+           {{109}},
+           {{115,16+topaz}}},
+    collectors={{x=0,y=0,t=jasper}},
+    depositors={{x=0,y=2,t=topaz}},
+    recipe={i={[jasper]=1},o={[topaz]=1},p=10},
+    cost=60
   }
 }
 ruby_source={
