@@ -23,8 +23,24 @@ bldg_types={
     collectors={{x=0,y=0,t=topaz}},
     depositors={{x=3,y=0,t=beryl}},
     recipe={i={[topaz]=1},o={[beryl]=1}},
-    cost=100
+    cost=200
   }
+}
+ruby_source={
+  belts={{0xd}},
+  tiles={{{0}}},
+  collectors={},
+  depositors={{x=0,y=0,t=ruby}},
+  recipe={i={},o={[ruby]=1}},
+  cost=0
+}
+sell_sink={
+  belts={{0xd}},
+  tiles={{{0}}},
+  collectors={{x=0,y=0,t=beryl}},
+  depositors={},
+  recipe={i={[beryl]=1},o={}},
+  cost=0
 }
 
 menu={2,ruby,37}
@@ -50,6 +66,9 @@ function _init()
   mouse_rot=0
   tool=1
   sel_bldg=1
+
+  place_bldg(ruby_source,5,1)
+  place_bldg(sell_sink,8,16)
 end
 
 function place_bldg(bt, x, y)
@@ -260,7 +279,7 @@ function _update()
         if it[1] == nil and b.outv[c.t] > 0 then
           b.outv[c.t] -= 1
           it[1] = c.t
-          it[2] = 4
+          it[2] = 0
         end
       end
     end
@@ -335,6 +354,15 @@ function _draw()
       draw_belt(shl(mouse_rot, 2)+((mouse_rot+2)%4), mouse_tx*8, mouse_ty*8)
     elseif tool == 2 then
       spr(ruby, mouse_tx*8, mouse_ty*8)
+    elseif tool == 3 then
+      bt=bldg_types[sel_bldg]
+      for y=1,#bt.tiles do
+        for x=1,#bt.tiles[y] do
+          for i=1,#bt.tiles[y][x] do
+            spr(bt.tiles[y][x][i], (mouse_tx+x-1)*8, (mouse_ty+y-1)*8)
+          end
+        end
+      end
     end
     spr(5, mouse_tx*8, mouse_ty*8)
   end
