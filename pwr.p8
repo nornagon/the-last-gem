@@ -12,8 +12,9 @@ x check when power=0
 - disallow side-belt insertion (into buildings only?)
 - name
 - slow down the belts as power gets low?
-- disallow placing belts in bulidings
+x disallow placing belts in bulidings
 - tweak recipes to require splitters after building #4
+- mouseless operation
 ]]
 width=16
 height=16
@@ -169,6 +170,23 @@ end
 function can_place_pusher(x, y)
   return can_place_bldg({tiles={{{}}}}, x, y)
 end
+function can_place_belt(x, y)
+  local b, bx, by
+  for b in all(bldgs) do
+    for by=1,#b.type.tiles do
+      for bx=1,#b.type.tiles[by] do
+        local ts = b.type.tiles[by][bx]
+        if #ts > 0 and x == bx-1+b.x and y == by-1+b.y then
+          return false
+        end
+      end
+    end
+  end
+  for p in all(pushers) do
+    if (p.x == x and p.y == y) return false
+  end
+  return true
+end
 
 function draw_belt(v, xl, yl)
   local entry=band(v, 3)
@@ -266,7 +284,9 @@ function _update()
   mouse_ty = flr(mouse_y/8)
   if mouse_btn != 0 and mouse_tx >= 1 and mouse_ty >= 1 and mouse_tx < width-1 and mouse_ty < height-1 then
     if menu[tool] == 2 then
-      place_belt(mouse_rot, mouse_tx+1, mouse_ty+1)
+      if can_place_belt(mouse_tx+1, mouse_ty+1) then
+        place_belt(mouse_rot, mouse_tx+1, mouse_ty+1)
+      end
     elseif menu[tool] == 4 then
       grid[mouse_tx+1][mouse_ty+1] = nil
       item[mouse_tx+1][mouse_ty+1] = {nil,nil}
@@ -288,6 +308,11 @@ function _update()
             end
           end
           money += flr(b.type.cost/2)
+        end
+      end
+      for b in all(pushers) do
+        if b.x == mouse_tx+1 and b.y == mouse_ty+1 then
+          del(pushers, b)
         end
       end
     elseif menu[tool] == 37 then
