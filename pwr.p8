@@ -7,14 +7,16 @@ x splitters
 x 2-ingredient recipes
 x 2nd source type
 x check when power=0
+x disallow placing belts in bulidings
+x mouseless operation
 - gameover
 - draw building over source/sink
 - disallow side-belt insertion (into buildings only?)
 - name
 - slow down the belts as power gets low?
-x disallow placing belts in bulidings
 - tweak recipes to require splitters after building #4
-- mouseless operation
+- fix up belts when placing
+- belt exit existing on entry side should force straight belt
 ]]
 width=16
 height=16
@@ -127,6 +129,8 @@ function _init()
 
   poke(0x5f2d, 1) -- enable mouse
   mouse_rot=0
+  last_mouse_x=nil
+  last_mouse_y=nil
   tool=1
   sel_bldg=1
 
@@ -280,9 +284,45 @@ function _update()
   if (mouse_x>=128) mouse_x=127
   if (mouse_y>=128) mouse_y=127
   mouse_btn = stat(34)
-  mouse_tx = flr(mouse_x/8)
-  mouse_ty = flr(mouse_y/8)
-  if mouse_btn != 0 and mouse_tx >= 1 and mouse_ty >= 1 and mouse_tx < width-1 and mouse_ty < height-1 then
+  if last_mouse_x != mouse_x or last_mouse_y != mouse_y then
+    mouse_tx = flr(mouse_x/8)
+    mouse_ty = flr(mouse_y/8)
+  end
+  last_mouse_x = mouse_x
+  last_mouse_y = mouse_y
+  if (mouse_tx<0) mouse_tx=0
+  if (mouse_tx>=width) mouse_tx=width-1
+  if (mouse_ty<0) mouse_ty=0
+  if (mouse_ty>=height) mouse_ty=height-1
+
+  if btn(5) then
+    -- menu showing
+    if btnp(0) then
+      tool -= 1
+      if (tool < 1) tool = #menu
+    end
+    if btnp(1) then
+      tool += 1
+      if (tool > #menu) tool = 1
+    end
+    if menu[tool]==37 then
+      if btnp(2) then
+        sel_bldg -= 1
+        if sel_bldg < 1 then sel_bldg = #bldg_types end
+      end
+      if btnp(3) then
+        sel_bldg += 1
+        if sel_bldg > #bldg_types then sel_bldg = 1 end
+      end
+    end
+  else
+    if (btnp(0)) mouse_tx -= 1
+    if (btnp(1)) mouse_tx += 1
+    if (btnp(2)) mouse_ty -= 1
+    if (btnp(3)) mouse_ty += 1
+  end
+
+  if (mouse_btn != 0 or btn(4)) and mouse_tx >= 1 and mouse_ty >= 1 and mouse_tx < width-1 and mouse_ty < height-1 then
     if menu[tool] == 2 then
       if can_place_belt(mouse_tx+1, mouse_ty+1) then
         place_belt(mouse_rot, mouse_tx+1, mouse_ty+1)
@@ -324,28 +364,6 @@ function _update()
     elseif menu[tool] == 41 then
       if can_place_pusher(mouse_tx+1,mouse_ty+1) then
         add(pushers, {x=mouse_tx+1,y=mouse_ty+1,t=0,dir=mouse_rot,activated=false})
-      end
-    end
-  end
-
-  if btn(5) then
-    -- menu showing
-    if btnp(0) then
-      tool -= 1
-      if (tool < 1) tool = #menu
-    end
-    if btnp(1) then
-      tool += 1
-      if (tool > #menu) tool = 1
-    end
-    if menu[tool]==37 then
-      if btnp(2) then
-        sel_bldg -= 1
-        if sel_bldg < 1 then sel_bldg = #bldg_types end
-      end
-      if btnp(3) then
-        sel_bldg += 1
-        if sel_bldg > #bldg_types then sel_bldg = 1 end
       end
     end
   end
