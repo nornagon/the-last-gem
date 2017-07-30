@@ -6,6 +6,7 @@ height=16
 ruby=7
 topaz=9
 beryl=10
+dollars=-10
 bldg_types={
   {
     belts={{2,0},
@@ -14,16 +15,16 @@ bldg_types={
            {{124},{68,16+topaz}}},
     collectors={{x=0,y=0,t=ruby}},
     depositors={{x=1,y=1,t=topaz}},
-    recipe={i={[ruby]=2},o={[topaz]=1}},
-    cost=100
+    recipe={i={[ruby]=2},o={[topaz]=1},p=20},
+    cost=10
   },
   {
     belts={{1,0,0,2+0xc}},
     tiles={{{82,16+topaz},{93},{93},{114,16+beryl}}},
     collectors={{x=0,y=0,t=topaz}},
     depositors={{x=3,y=0,t=beryl}},
-    recipe={i={[topaz]=1},o={[beryl]=1}},
-    cost=200
+    recipe={i={[topaz]=1},o={[beryl]=1},p=50},
+    cost=20
   }
 }
 ruby_source={
@@ -31,7 +32,7 @@ ruby_source={
   tiles={{{0}}},
   collectors={},
   depositors={{x=0,y=0,t=ruby}},
-  recipe={i={},o={[ruby]=1}},
+  recipe={i={},o={[ruby]=1},p=0},
   cost=0
 }
 sell_sink={
@@ -39,7 +40,7 @@ sell_sink={
   tiles={{{0}}},
   collectors={{x=0,y=0,t=beryl}},
   depositors={},
-  recipe={i={[beryl]=1},o={}},
+  recipe={i={[beryl]=1},o={[dollars]=5},p=0},
   cost=0
 }
 
@@ -49,6 +50,8 @@ menu={2,ruby,37}
 -- r u l d
 function _init()
   t=0
+  money=50
+  power=10000
   grid={}
   item={}
   for x=1,width do
@@ -88,6 +91,20 @@ function place_bldg(bt, x, y)
     b.outv[c.t] = 0
   end
   add(bldgs, b)
+end
+function can_place_bldg(bt, x, y)
+  local bx,by
+  for by=1,#bt.tiles do
+    for bx=1,#bt.tiles[by] do
+      if x+bx-1 >= width or y+by-1 >= height then
+        return false
+      end
+      if grid[x+bx-1][y+by-1] ~= nil then
+        return false
+      end
+    end
+  end
+  return true
 end
 
 function draw_belt(v, xl, yl)
@@ -146,6 +163,14 @@ function dir(v)
   if (v==3) return 0,1
 end
 
+function ndigits(v)
+  if (v>=10000) return 5
+  if (v>=1000) return 4
+  if (v>=100) return 3
+  if (v>=10) return 2
+  return 1
+end
+
 function place_belt(exit, tx, ty)
   local entry = (exit + 2) % 4
 
@@ -164,13 +189,6 @@ function place_belt(exit, tx, ty)
   if (cw_enters and not ccw_enters) entry = cwd
 
   grid[tx][ty] = entry + shl(exit, 2)
-
-  local exdx, exdy = dir(exit)
-  local exg = grid[tx+exdx][ty+exdy]
-  if exg ~= nil then
-    local exex = shr(band(exg, 0xc), 2)
-    -- todo: fix next belt
-  end
 end
 
 function _update()
@@ -178,16 +196,22 @@ function _update()
   mouse_y = stat(33)
   if (mouse_x<0) mouse_x=0
   if (mouse_y<0) mouse_y=0
+  if (mouse_x>=128) mouse_x=127
+  if (mouse_y>=128) mouse_y=127
   mouse_btn = stat(34)
   mouse_tx = flr(mouse_x/8)
   mouse_ty = flr(mouse_y/8)
-  if mouse_btn != 0 then
+  if mouse_btn != 0 and mouse_tx >= 1 and mouse_ty >= 1 and mouse_tx < width-1 and mouse_ty < height-1 then
     if tool == 1 then
       place_belt(mouse_rot, mouse_tx+1, mouse_ty+1)
     elseif tool == 2 then
       item[mouse_tx+1][mouse_ty+1] = {ruby, 3}
     elseif tool == 3 then
-      place_bldg(bldg_types[sel_bldg], mouse_tx+1, mouse_ty+1)
+      local bt=bldg_types[sel_bldg]
+      if bt.cost <= money and can_place_bldg(bt, mouse_tx+1,mouse_ty+1) then
+        place_bldg(bt, mouse_tx+1, mouse_ty+1)
+        money -= bldg_types[sel_bldg].cost
+      end
     end
   end
 
@@ -271,8 +295,13 @@ function _update()
           b.inv[it] = 0
         end
         for it,c in pairs(b.type.recipe.o) do
-          b.outv[it] = c
+          if it==dollars then
+            money += c
+          else
+            b.outv[it] = c
+          end
         end
+        power -= b.type.recipe.p
       end
       for c in all(b.type.depositors) do
         local it=item[b.x+c.x][b.y+c.y]
@@ -351,7 +380,9 @@ function _draw()
 
   if t%11 > 2 then
     if tool == 1 then
+      palt(0, false)
       draw_belt(shl(mouse_rot, 2)+((mouse_rot+2)%4), mouse_tx*8, mouse_ty*8)
+      palt(0, true)
     elseif tool == 2 then
       spr(ruby, mouse_tx*8, mouse_ty*8)
     elseif tool == 3 then
@@ -367,6 +398,19 @@ function _draw()
     spr(5, mouse_tx*8, mouse_ty*8)
   end
 
+  -- money
+  local mdigits=ndigits(money)
+  rectfill(64,0,64+(1+mdigits)*4,7,0)
+  print("$", 65, 1, 10)
+  print(money, 69, 1, 7)
+
+  -- power
+  local pdigits=ndigits(power)
+  rectfill(94,0,95+(1+pdigits)*4,7,0)
+  spr(53,95,0)
+  print(power,100,1,7)
+
+  -- menu
   if btn(5) then
     rectfill(8,0,48,7,0)
     for i=1,#menu do
@@ -377,7 +421,7 @@ function _draw()
       end
     end
     if tool==3 then
-      rectfill(24,8,79,64)
+      rectfill(24,8,79,7+8*#bldg_types)
       for i=1,#bldg_types do
         local bt=bldg_types[i]
         local rcp=bt.recipe
@@ -397,7 +441,9 @@ function _draw()
           x += c
         end
         print("$", 64, i*8+1, 10)
-        print(bt.cost, 68, i*8+1, 7)
+        local cost_color=7
+        if (bt.cost > money) cost_color=8
+        print(bt.cost, 68, i*8+1, cost_color)
         if i==sel_bldg then
           spr(21, 24, i*8)
           spr(22, 72, i*8)
@@ -431,12 +477,12 @@ ddaaddaa90000009999999999555555900000000cc000000000000cc000000000000000000000000
 0000000090005505505550559000000900000000d666666d0088088000000500099000000000000000000000dddd5ddddddddddddd5ddddd0000000000000000
 0000000095500005505150519555555900000000d600006d0000000000000000000000000000000000000000ddddddddd5dddddddddddddd0000000000000000
 0000000095555559999999999155551900000000dd0000dd0000000000000000000000000000000000000000dddddddddddddddddddddddd0000000000000000
-00000000dd9999999999999991555519000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000d95155051505150595555559000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000955555055505550590000009000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000955555055505550595555559000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000900555505505550591555519000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000955005505505550595555559000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000dd9999999999999991555519000000000660000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000d9515505150515059555555900000000666600000a000000000000000000000000000000000000000000000000000000000000000000000000000000
+000000009555550555055505900000090000000060060000a0000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000955555055505550595555559000000006bb60000aaa00000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000900555505505550591555519000000006bb6000000a00000000000000000000000000000000000000000000000000000000000000000000000000000
+0000000095500550550555059555555900000000666600000a000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000915550001505150590000009000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000955555599999999995555559000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 fffffffff666666fffffffffffffffff6666666ff666666fffffffff6666666ffffffffff666666fffffffffffffffff6666666ff666666fffffffff6666666f
