@@ -421,7 +421,7 @@ function _draw()
       end
     end
     if tool==3 then
-      rectfill(24,8,79,7+8*#bldg_types)
+      rectfill(24,8,120,7+8*#bldg_types)
       for i=1,#bldg_types do
         local bt=bldg_types[i]
         local rcp=bt.recipe
@@ -440,10 +440,12 @@ function _draw()
           end
           x += c
         end
-        print("$", 64, i*8+1, 10)
+        print("$", 65, i*8+1, 10)
         local cost_color=7
         if (bt.cost > money) cost_color=8
-        print(bt.cost, 68, i*8+1, cost_color)
+        print(bt.cost, 69, i*8+1, cost_color)
+        spr(53, 95, i*8)
+        print(bt.recipe.p, 100, i*8+1, 7  )
         if i==sel_bldg then
           spr(21, 24, i*8)
           spr(22, 72, i*8)
